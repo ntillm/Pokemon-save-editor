@@ -3,6 +3,15 @@
 #include <stdlib.h>
 #define MAX 100
 
+struct pokemon {
+  unsigned char nickname[11];
+  uint16_t current_hp;
+  uint16_t max_hp;
+  uint8_t level;
+  uint8_t species;
+  uint8_t status;
+};
+
 unsigned char decode(unsigned char c, const unsigned char *table){
  if (table[c] != 0){
   return table[c];
@@ -74,19 +83,39 @@ void print_trainer_money(FILE *file){
 }
 
 void print_trainer_team(FILE *file, const unsigned char *table){
-  unsigned char buffer[11];
-  fseek(file,0x29C4,SEEK_SET);
+ 
+  struct pokemon party[6];
+
+  for(int i = 0; i < 6; i++){
+    unsigned char buffer[48];
+    fseek(file,0x286D + (i * 48),SEEK_SET);
+    size_t bytes_read = fread(buffer,1,48,file);
+    
+    party[i].level = buffer[0x1F];
+    party[i].max_hp = (buffer[0x24] << 8) | buffer[0x24 + 1];
+    party[i].current_hp = (buffer[0x22] << 8) | buffer[0x22 + 1];
+    party[i].species = buffer[0x00];
+     
+  }
+
+   fseek(file,0x29CF,SEEK_SET);
   
   for(int i = 0; i < 6; i++){
-    size_t bytes_read = fread(buffer,1,11,file);
-    if (buffer[0] == 0xFF) break;
+    size_t bytes_read = fread(party[i].nickname,1,11,file);
+    if (party[i].nickname[0] == 0xFF) break;
 
     printf("Slot %d\n", i + 1);
     
     for(int j = 0; j < 11; j++){
-      if(buffer[j] == 0x50) break;
-      printf("%c",table[buffer[j]]);
+      if(party[i].nickname[j] == 0x50) break;
+      printf("%c",table[party[i].nickname[j]]);
     }
+    // Inside your second loop, after decoding the name:
+    printf("  Level: %u | HP: %u/%u (Species ID: %02X)\n", 
+        party[i].level, 
+        party[i].current_hp, 
+        party[i].max_hp, 
+        party[i].species);
     printf("\n");
   }
 }
@@ -125,7 +154,6 @@ int main(int argc, char *argv[]){
   print_trainer_badges(file); 
   print_trainer_money(file);  
   print_trainer_team(file, table);
-
 
   fclose(file);
 
