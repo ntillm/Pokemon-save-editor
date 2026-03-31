@@ -1,0 +1,28 @@
+# Compiled Binaries
+*.exe
+*.out
+emulator
+parser
+
+# Object Files
+*.o
+*.obj
+
+# Debug Symbols
+*.dSYM/
+*.pdb
+
+# IDE / Editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Game Data (Keep your repo clean of large binaries)
+*.sav
+*.gb
+*.gbc
+
+# Operating System files
+.DS_Store
+Thumbs.db

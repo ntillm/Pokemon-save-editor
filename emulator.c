@@ -12,7 +12,13 @@ struct pokemon {
   uint8_t status;
   uint32_t xp;
   uint8_t moveset[4];
-  uint8_t ppval[4];
+  uint8_t ppval[4]; 
+  uint8_t attack_iv;
+  uint8_t speed_iv;
+  uint8_t defense_iv;
+  uint8_t health_iv;
+  uint8_t special_iv;
+
 };
 
 unsigned char decode(unsigned char c, const unsigned char *table){
@@ -101,7 +107,13 @@ void print_trainer_team(FILE *file, const unsigned char *table){
     party[i].current_hp = (buffer[0x22] << 8) | buffer[0x22 + 1];
     party[i].species = buffer[0x00];
     party[i].xp = (buffer[0x08] << 16) | (buffer[0x08 + 1] << 8) | buffer[0x08 + 2];
-   
+    party[i].attack_iv = buffer[0x15] >> 4;
+    party[i].defense_iv = buffer[0x15] & 0x0F;
+    party[i].speed_iv = buffer[0x16] >> 4;
+    party[i].special_iv = buffer[0x16] & 0x0F;
+    party[i].health_iv = ((party[i].attack_iv & 0x01) << 3) | ((party[i].defense_iv & 0x01) << 2) | ((party[i].speed_iv & 0x01) << 1) | ((party[i].special_iv & 0x01));
+    
+
     for(int j = 0; j < 4; j++) {
         party[i].moveset[j] = buffer[0x02 + j];
         party[i].ppval[j] = buffer[0x17 + j];
@@ -121,12 +133,17 @@ void print_trainer_team(FILE *file, const unsigned char *table){
       printf("%c",table[party[i].nickname[j]]);
     }
     // Inside your second loop, after decoding the name:
-    printf("  Level: %u | HP: %u/%u XP: %u (Species ID: %02X)\n", 
+    printf("  Level: %u | HP: %u/%u XP: %u (Species ID: %02X)\n attack iv: %d | defense iv: %d | speed iv: %d | special iv: %d | health iv: %d\n", 
         party[i].level, 
         party[i].current_hp, 
         party[i].max_hp, 
         party[i].xp,
-        party[i].species);
+        party[i].species,
+        party[i].attack_iv,
+        party[i].defense_iv,
+        party[i].speed_iv,
+        party[i].special_iv,
+        party[i].health_iv);
   
     for (int j = 0; j < 4; j++){
       if(party[i].moveset[j] == 0x00) break; 
