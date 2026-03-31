@@ -18,7 +18,8 @@ struct pokemon {
   uint8_t defense_iv;
   uint8_t health_iv;
   uint8_t special_iv;
-
+  uint16_t trainer_id;
+  unsigned char ot_name[11];
 };
 
 unsigned char decode(unsigned char c, const unsigned char *table){
@@ -73,7 +74,7 @@ void print_trainer_badges(FILE *file){
     "Rising Badge"  // Bit 7
   };
 
-  for (int i = 0; i < 7; i++){
+  for (int i = 0; i < 8; i++){
     if(buffer[0] & 1 << i){
       printf("%s\n",badge_names[i]);
     }
@@ -94,12 +95,25 @@ void print_trainer_money(FILE *file){
 void print_trainer_team(FILE *file, const unsigned char *table){
  
   struct pokemon party[6];
+  
+  //get party count
+  uint8_t team_count; 
+  fseek(file,0x2865,SEEK_SET);
+  //pass by reference so fread can change the value dynamically
+  fread(&team_count,1,1,file); 
 
-  for(int i = 0; i < 6; i++){
+  for(int i = 0; i < team_count; i++){
     unsigned char buffer[48];
     fseek(file,0x286D + (i * 48),SEEK_SET);
     size_t bytes_read = fread(buffer,1,48,file);
-  
+    
+    //read ot_name into buffer
+    fseek(file,0x298D + (i * 11), SEEK_SET);
+    fread(party[i].ot_name,1,11,file);
+
+    //read nicknames into buffer
+    fseek(file,0x29CF + (i * 11) ,SEEK_SET);
+    fread(party[i].nickname,1,11,file);
     
 
     party[i].level = buffer[0x1F];
@@ -112,7 +126,7 @@ void print_trainer_team(FILE *file, const unsigned char *table){
     party[i].speed_iv = buffer[0x16] >> 4;
     party[i].special_iv = buffer[0x16] & 0x0F;
     party[i].health_iv = ((party[i].attack_iv & 0x01) << 3) | ((party[i].defense_iv & 0x01) << 2) | ((party[i].speed_iv & 0x01) << 1) | ((party[i].special_iv & 0x01));
-    
+    party[i].trainer_id = buffer[0x06] << 8 | buffer[0x06 + 1]; 
 
     for(int j = 0; j < 4; j++) {
         party[i].moveset[j] = buffer[0x02 + j];
@@ -120,10 +134,8 @@ void print_trainer_team(FILE *file, const unsigned char *table){
     }
   }
 
-   fseek(file,0x29CF,SEEK_SET);
   
   for(int i = 0; i < 6; i++){
-    size_t bytes_read = fread(party[i].nickname,1,11,file);
     if (party[i].nickname[0] == 0xFF) break;
 
     printf("Slot %d\n", i + 1);
@@ -132,7 +144,26 @@ void print_trainer_team(FILE *file, const unsigned char *table){
       if(party[i].nickname[j] == 0x50) break;
       printf("%c",table[party[i].nickname[j]]);
     }
-    // Inside your second loop, after decoding the name:
+   
+    printf("\n");
+
+    for(int j = 0; j < 11; j++){
+      if(party[i].nickname[j] == 0x50) break;
+      printf("%c",table[party[i].ot_name[j]]);
+    }
+    //determine if a pokemon is shiny based on IVS 
+    int is_shiny = 0;
+    if (
+        party[i].defense_iv == 10 &&
+        party[i].speed_iv == 10 &&
+        party[i].special_iv == 10 &&
+        (party[i].attack_iv & 0x02)) {
+          is_shiny = 1;
+    }
+    
+    if (is_shiny) printf(" ★ ");
+    printf(" Trainer ID: %d ", party[i].trainer_id);
+
     printf("  Level: %u | HP: %u/%u XP: %u (Species ID: %02X)\n attack iv: %d | defense iv: %d | speed iv: %d | special iv: %d | health iv: %d\n", 
         party[i].level, 
         party[i].current_hp, 
