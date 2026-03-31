@@ -10,6 +10,9 @@ struct pokemon {
   uint8_t level;
   uint8_t species;
   uint8_t status;
+  uint32_t xp;
+  uint8_t moveset[4];
+  uint8_t ppval[4];
 };
 
 unsigned char decode(unsigned char c, const unsigned char *table){
@@ -90,12 +93,19 @@ void print_trainer_team(FILE *file, const unsigned char *table){
     unsigned char buffer[48];
     fseek(file,0x286D + (i * 48),SEEK_SET);
     size_t bytes_read = fread(buffer,1,48,file);
+  
     
+
     party[i].level = buffer[0x1F];
     party[i].max_hp = (buffer[0x24] << 8) | buffer[0x24 + 1];
     party[i].current_hp = (buffer[0x22] << 8) | buffer[0x22 + 1];
     party[i].species = buffer[0x00];
-     
+    party[i].xp = (buffer[0x08] << 16) | (buffer[0x08 + 1] << 8) | buffer[0x08 + 2];
+   
+    for(int j = 0; j < 4; j++) {
+        party[i].moveset[j] = buffer[0x02 + j];
+        party[i].ppval[j] = buffer[0x17 + j];
+    }
   }
 
    fseek(file,0x29CF,SEEK_SET);
@@ -111,14 +121,22 @@ void print_trainer_team(FILE *file, const unsigned char *table){
       printf("%c",table[party[i].nickname[j]]);
     }
     // Inside your second loop, after decoding the name:
-    printf("  Level: %u | HP: %u/%u (Species ID: %02X)\n", 
+    printf("  Level: %u | HP: %u/%u XP: %u (Species ID: %02X)\n", 
         party[i].level, 
         party[i].current_hp, 
         party[i].max_hp, 
+        party[i].xp,
         party[i].species);
+  
+    for (int j = 0; j < 4; j++){
+      if(party[i].moveset[j] == 0x00) break; 
+      printf(" Moveset: %02X (PP:%d/??) ", party[i].moveset[j], party[i].ppval[j]);
+      printf("\n");
+    }
     printf("\n");
   }
 }
+
 
 int main(int argc, char *argv[]){
   unsigned char table[256] = {0};
