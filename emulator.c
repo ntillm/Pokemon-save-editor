@@ -213,6 +213,21 @@ void make_shiny(FILE *file,int slot_index){
   fputc(0xAA,file);
 }
 
+void make_team_shiny(FILE *file){
+  uint8_t team_count; 
+  fseek(file,0x2865,SEEK_SET);
+  if(fread(&team_count,1,1,file)!= 1) return;
+
+  if(team_count == 0 || team_count > 6){ 
+      printf("Invalid pokemon team count: %d\n",team_count);
+      return;
+  }
+    for(int i = 0; i < team_count; i++) {
+      make_shiny(file, i); 
+    }
+  printf("Successfully updated %d pokemon to shiny status!\n",team_count); 
+} 
+
 int main(int argc, char *argv[]){
   unsigned char table[256] = {0};
   
@@ -252,7 +267,7 @@ int main(int argc, char *argv[]){
   //fputc(0x0F, file); // High Byte (The 0x0F part)
   //fputc(0x42, file); // Middle Byte (The 0x42 part)
   //fputc(0x3F, file); // Low Byte (The 0x3F part)
-  make_shiny(file,1);
+  make_team_shiny(file);
   update_checksum(file);
   print_trainer_team(file,table);
   print_trainer_money(file);
