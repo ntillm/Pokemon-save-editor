@@ -185,6 +185,25 @@ void print_trainer_team(FILE *file, const unsigned char *table){
   }
 }
 
+void update_checksum(FILE *file){
+  uint16_t checksum = 0;
+  //size of checksum in bytes(distance between 0x2009 and 2B82)
+  unsigned char buffer[2938];
+  fseek(file,0x2009,SEEK_SET);
+  fread(buffer,1,2938,file);
+  for(int i=0; i < 2938; i++){
+    checksum += buffer[i]; 
+  }
+  unsigned char bytes[2];
+  bytes[0] = checksum & 0xFF; 
+  bytes[1] = (checksum >> 8) & 0xFF;
+  //printf("Calculated Checksum: %04X\n", bytes[0]);
+  //move to checksum offset
+  fseek(file,0x2D0D,SEEK_SET);
+  //write to checksum offset
+  fwrite(bytes,1,2,file);
+
+}
 
 int main(int argc, char *argv[]){
   unsigned char table[256] = {0};
@@ -208,19 +227,25 @@ int main(int argc, char *argv[]){
 
   //unsigned char buffer[MAX];
   
-  FILE *file = fopen(argv[1], "rb");
+  FILE *file = fopen(argv[1], "rb+");
   
   if(file == NULL){
     perror("Error Opening File");
     return 1;
   }
   
-  print_trainer_name(file,table); 
-  print_trainer_id(file);
-  print_trainer_badges(file); 
-  print_trainer_money(file);  
-  print_trainer_team(file, table);
-
+  //print_trainer_name(file,table); 
+  //print_trainer_id(file);
+  //print_trainer_badges(file); 
+  //print_trainer_money(file);  
+  //print_trainer_team(file, table);
+  
+  fseek(file,0x23DC,SEEK_SET);
+  fputc(0x0F, file); // High Byte (The 0x0F part)
+  fputc(0x42, file); // Middle Byte (The 0x42 part)
+  fputc(0x3F, file); // Low Byte (The 0x3F part)
+  update_checksum(file);
+  print_trainer_money(file);
   fclose(file);
 
   
