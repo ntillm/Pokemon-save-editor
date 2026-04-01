@@ -205,6 +205,14 @@ void update_checksum(FILE *file){
 
 }
 
+void make_shiny(FILE *file,int slot_index){
+  //how we determine which pokemon to make shiny
+  int offset = 0x286D + (slot_index * 48);
+  fseek(file, offset + 0x15, SEEK_SET);
+  fputc(0xFA,file);
+  fputc(0xAA,file);
+}
+
 int main(int argc, char *argv[]){
   unsigned char table[256] = {0};
   
@@ -240,11 +248,13 @@ int main(int argc, char *argv[]){
   //print_trainer_money(file);  
   //print_trainer_team(file, table);
   
-  fseek(file,0x23DC,SEEK_SET);
-  fputc(0x0F, file); // High Byte (The 0x0F part)
-  fputc(0x42, file); // Middle Byte (The 0x42 part)
-  fputc(0x3F, file); // Low Byte (The 0x3F part)
+  //fseek(file,0x23DC,SEEK_SET);
+  //fputc(0x0F, file); // High Byte (The 0x0F part)
+  //fputc(0x42, file); // Middle Byte (The 0x42 part)
+  //fputc(0x3F, file); // Low Byte (The 0x3F part)
+  make_shiny(file,1);
   update_checksum(file);
+  print_trainer_team(file,table);
   print_trainer_money(file);
   fclose(file);
 
