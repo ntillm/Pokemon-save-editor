@@ -1,0 +1,165 @@
+#include "display_utils.h"
+
+unsigned char decode(unsigned char c, const unsigned char *table){
+ if (table[c] != 0){
+  return table[c];
+  } else{
+  return 0;
+  }
+}
+
+void print_trainer_name(FILE *file, const unsigned char *table){
+  unsigned char buffer[11]; 
+  fseek(file,0x200B,SEEK_SET);
+  size_t bytes_read = fread(buffer,1,11,file);
+ 
+
+
+  for(int i = 0; i < bytes_read; i++){
+    unsigned char byte = decode(buffer[i], table);
+    if(!byte) {break;} 
+    else {
+      printf("%c", byte);
+    }
+  }
+  printf("\n");
+}
+
+void print_trainer_id(FILE *file){
+  unsigned char buffer[2];
+  fseek(file,0x2009,SEEK_SET);
+  size_t bytes_read = fread(buffer,1,2,file);
+
+  uint16_t id = buffer[0] << 8 | buffer[1];
+
+  printf("%u", id);
+  printf("\n");
+}
+
+void print_trainer_badges(FILE *file){
+  unsigned char buffer[1];
+  fseek(file,0x23DD,SEEK_SET);
+  size_t bytes_read = fread(buffer,1,1,file);
+
+  const char *badge_names[] = {
+    "Zephyr Badge", // Bit 0
+    "Hive Badge",   // Bit 1
+    "Plain Badge",  // Bit 2
+    "Fog Badge",    // Bit 3
+    "Storm Badge",  // Bit 4
+    "Mineral Badge",// Bit 5
+    "Glacier Badge",// Bit 6
+    "Rising Badge"  // Bit 7
+  };
+
+  for (int i = 0; i < 8; i++){
+    if(buffer[0] & 1 << i){
+      printf("%s\n",badge_names[i]);
+    }
+  }
+}
+
+void print_trainer_money(FILE *file){
+  unsigned char buffer[3];
+  fseek(file,0x23DC,SEEK_SET);
+  size_t bytes_read = fread(buffer,1,3,file);
+
+  uint32_t money = buffer[0] << 16 | buffer[1] << 8 | buffer[2];
+
+  printf("%u", money);
+  printf("\n");
+}
+
+void print_trainer_team(FILE *file, const unsigned char *table){
+ 
+  struct pokemon party[6];
+  
+  //get party count
+  uint8_t team_count; 
+  fseek(file,0x2865,SEEK_SET);
+  //pass by reference so fread can change the value dynamically
+  fread(&team_count,1,1,file); 
+
+  for(int i = 0; i < team_count; i++){
+    unsigned char buffer[48];
+    fseek(file,0x286D + (i * 48),SEEK_SET);
+    size_t bytes_read = fread(buffer,1,48,file);
+    
+    //read ot_name into buffer
+    fseek(file,0x298D + (i * 11), SEEK_SET);
+    fread(party[i].ot_name,1,11,file);
+
+    //read nicknames into buffer
+    fseek(file,0x29CF + (i * 11) ,SEEK_SET);
+    fread(party[i].nickname,1,11,file);
+    
+
+    party[i].level = buffer[0x1F];
+    party[i].max_hp = (buffer[0x24] << 8) | buffer[0x24 + 1];
+    party[i].current_hp = (buffer[0x22] << 8) | buffer[0x22 + 1];
+    party[i].species = buffer[0x00];
+    party[i].xp = (buffer[0x08] << 16) | (buffer[0x08 + 1] << 8) | buffer[0x08 + 2];
+    party[i].attack_iv = buffer[0x15] >> 4;
+    party[i].defense_iv = buffer[0x15] & 0x0F;
+    party[i].speed_iv = buffer[0x16] >> 4;
+    party[i].special_iv = buffer[0x16] & 0x0F;
+    party[i].health_iv = ((party[i].attack_iv & 0x01) << 3) | ((party[i].defense_iv & 0x01) << 2) | ((party[i].speed_iv & 0x01) << 1) | ((party[i].special_iv & 0x01));
+    party[i].trainer_id = buffer[0x06] << 8 | buffer[0x06 + 1]; 
+
+    for(int j = 0; j < 4; j++) {
+        party[i].moveset[j] = buffer[0x02 + j];
+        party[i].ppval[j] = buffer[0x17 + j];
+    }
+  }
+
+  
+  for(int i = 0; i < 6; i++){
+    if (party[i].nickname[0] == 0xFF) break;
+
+    printf("Slot %d\n", i + 1);
+    
+    for(int j = 0; j < 11; j++){
+      if(party[i].nickname[j] == 0x50) break;
+      printf("%c",table[party[i].nickname[j]]);
+    }
+   
+    printf("\n");
+
+    for(int j = 0; j < 11; j++){
+      if(party[i].nickname[j] == 0x50) break;
+      printf("%c",table[party[i].ot_name[j]]);
+    }
+    //determine if a pokemon is shiny based on IVS 
+    int is_shiny = 0;
+    if (
+        party[i].defense_iv == 10 &&
+        party[i].speed_iv == 10 &&
+        party[i].special_iv == 10 &&
+        (party[i].attack_iv & 0x02)) {
+          is_shiny = 1;
+    }
+    
+    if (is_shiny) printf(" ★ ");
+    printf(" Trainer ID: %d ", party[i].trainer_id);
+
+    printf("  Level: %u | HP: %u/%u XP: %u (Species ID: %02X)\n attack iv: %d | defense iv: %d | speed iv: %d | special iv: %d | health iv: %d\n", 
+        party[i].level, 
+        party[i].current_hp, 
+        party[i].max_hp, 
+        party[i].xp,
+        party[i].species,
+        party[i].attack_iv,
+        party[i].defense_iv,
+        party[i].speed_iv,
+        party[i].special_iv,
+        party[i].health_iv);
+  
+    for (int j = 0; j < 4; j++){
+      if(party[i].moveset[j] == 0x00) break; 
+      printf(" Moveset: %02X (PP:%d/??) ", party[i].moveset[j], party[i].ppval[j]);
+      printf("\n");
+    }
+    printf("\n");
+  }
+}
+
