@@ -3,6 +3,7 @@
 *.out
 emulator
 parser
+bin/
 
 # Object Files
 *.o
@@ -26,3 +27,7 @@ parser
 # Operating System files
 .DS_Store
 Thumbs.db
+
+#LSP / IDE caches
+.cache/
+compile_commands.json
