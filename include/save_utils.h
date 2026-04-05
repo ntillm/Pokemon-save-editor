@@ -16,5 +16,7 @@
 void make_shiny(FILE *file, int slot_index);
 void make_team_shiny(FILE *file);
 void update_checksum(FILE *file);
+void inject_pokemon_to_party(FILE *file, uint8_t species, uint8_t level);
+void inject_pokemon_to_pc(FILE *file, uint8_t species, uint8_t level);
 
 #endif

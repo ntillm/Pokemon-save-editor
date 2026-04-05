@@ -34,6 +34,7 @@ int main(int argc, char *argv[]){
   update_checksum(file);
   print_trainer_team(file,table);
   print_trainer_money(file);
+  inject_pokemon(file,1,1,1); 
   fclose(file);
 
   

@@ -1,0 +1,44 @@
+[
+  {
+    "file": "src/main.c",
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "src/main.c",
+      "-o",
+      "bin/editor"
+    ],
+    "directory": "/Users/natetill/projects/PSE",
+    "output": "bin/editor"
+  },
+  {
+    "file": "src/save_utils.c",
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "src/save_utils.c",
+      "-o",
+      "bin/editor"
+    ],
+    "directory": "/Users/natetill/projects/PSE",
+    "output": "bin/editor"
+  },
+  {
+    "file": "src/display_utils.c",
+    "arguments": [
+      "/usr/bin/gcc",
+      "-Iinclude",
+      "-Wall",
+      "-Wextra",
+      "src/display_utils.c",
+      "-o",
+      "bin/editor"
+    ],
+    "directory": "/Users/natetill/projects/PSE",
+    "output": "bin/editor"
+  }
+]
